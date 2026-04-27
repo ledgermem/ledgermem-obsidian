@@ -1,0 +1,29 @@
+{
+  "name": "@ledgermem/obsidian",
+  "version": "0.1.0",
+  "description": "Obsidian community plugin that syncs notes to LedgerMem.",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "build": "esbuild main.ts --bundle --outfile=main.js --format=cjs --platform=node --external:obsidian --target=es2022",
+    "dev": "esbuild main.ts --bundle --outfile=main.js --format=cjs --platform=node --external:obsidian --target=es2022 --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["obsidian", "obsidian-plugin", "ledgermem", "memory"],
+  "author": "LedgerMem <founders@proofly.dev>",
+  "license": "MIT",
+  "peerDependencies": {
+    "obsidian": "^1.5.0"
+  },
+  "dependencies": {
+    "@ledgermem/memory": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "esbuild": "^0.20.0",
+    "obsidian": "^1.5.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}
