@@ -156,6 +156,8 @@ export default class LedgerMemPlugin extends Plugin {
     }
     try {
       const content = await this.app.vault.read(file);
+      // Skip empty notes — saves API calls and keeps retrieval clean.
+      if (content.trim().length === 0) return;
       const hash = hashContent(content);
       if (this.settings.fileHashes[file.path] === hash) return; // unchanged
       await pushNote(client, { path: file.path, basename: file.basename }, content);
@@ -178,9 +180,18 @@ export default class LedgerMemPlugin extends Plugin {
     let ok = 0;
     let fail = 0;
     let skipped = 0;
+    // Persist hashes every PERSIST_EVERY notes so a crash mid-backfill doesn't
+    // throw away progress for the entire vault.
+    const PERSIST_EVERY = 25;
+    let sinceLastPersist = 0;
     for (const file of files) {
       try {
         const content = await this.app.vault.read(file);
+        // Skip empty notes — they pollute retrieval with no signal.
+        if (content.trim().length === 0) {
+          skipped += 1;
+          continue;
+        }
         const hash = hashContent(content);
         if (this.settings.fileHashes[file.path] === hash) {
           skipped += 1;
@@ -189,6 +200,11 @@ export default class LedgerMemPlugin extends Plugin {
         await pushNote(client, { path: file.path, basename: file.basename }, content);
         this.settings.fileHashes[file.path] = hash;
         ok += 1;
+        sinceLastPersist += 1;
+        if (sinceLastPersist >= PERSIST_EVERY) {
+          await this.saveData(this.settings);
+          sinceLastPersist = 0;
+        }
       } catch (err) {
         fail += 1;
         console.error("[ledgermem] backfill error", file.path, err);
