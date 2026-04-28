@@ -15,6 +15,8 @@ export interface LedgerMemSettings {
   workspaceId: string;
   syncMode: SyncMode;
   intervalMinutes: number;
+  /** Map of file path -> content hash, used to skip unchanged notes. */
+  fileHashes: Record<string, string>;
 }
 
 export const DEFAULT_SETTINGS: LedgerMemSettings = {
@@ -22,7 +24,18 @@ export const DEFAULT_SETTINGS: LedgerMemSettings = {
   workspaceId: "",
   syncMode: "on-save",
   intervalMinutes: 15,
+  fileHashes: {},
 };
+
+// Lightweight non-cryptographic hash (FNV-1a) — adequate for change detection.
+export function hashContent(s: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16);
+}
 
 const WIKILINK_REGEX = /\[\[([^\]\|#]+)(?:#[^\]\|]+)?(?:\|[^\]]+)?\]\]/g;
 
@@ -143,7 +156,11 @@ export default class LedgerMemPlugin extends Plugin {
     }
     try {
       const content = await this.app.vault.read(file);
+      const hash = hashContent(content);
+      if (this.settings.fileHashes[file.path] === hash) return; // unchanged
       await pushNote(client, { path: file.path, basename: file.basename }, content);
+      this.settings.fileHashes[file.path] = hash;
+      await this.saveData(this.settings);
     } catch (err) {
       console.error("[ledgermem] sync failed", err);
       new Notice(`LedgerMem sync failed: ${(err as Error).message}`);
@@ -160,17 +177,25 @@ export default class LedgerMemPlugin extends Plugin {
     new Notice(`LedgerMem: backfilling ${files.length} notes…`);
     let ok = 0;
     let fail = 0;
+    let skipped = 0;
     for (const file of files) {
       try {
         const content = await this.app.vault.read(file);
+        const hash = hashContent(content);
+        if (this.settings.fileHashes[file.path] === hash) {
+          skipped += 1;
+          continue;
+        }
         await pushNote(client, { path: file.path, basename: file.basename }, content);
+        this.settings.fileHashes[file.path] = hash;
         ok += 1;
       } catch (err) {
         fail += 1;
         console.error("[ledgermem] backfill error", file.path, err);
       }
     }
-    new Notice(`LedgerMem backfill complete: ${ok} ok, ${fail} failed.`);
+    await this.saveData(this.settings);
+    new Notice(`LedgerMem backfill: ${ok} pushed, ${skipped} unchanged, ${fail} failed.`);
   }
 }
 
