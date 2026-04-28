@@ -37,12 +37,17 @@ export function hashContent(s: string): string {
   return (h >>> 0).toString(16);
 }
 
+// /g regex literal — must not be used with .exec() in a long-lived module
+// because exec() mutates the regex's lastIndex. Obsidian fires vault.on
+// "modify" while backfillVault may still be iterating, so two concurrent
+// callers were racing on the shared lastIndex and producing missed +
+// duplicated wikilinks. matchAll uses a per-iterator lastIndex and is safe
+// to call concurrently against the same source RegExp.
 const WIKILINK_REGEX = /\[\[([^\]\|#]+)(?:#[^\]\|]+)?(?:\|[^\]]+)?\]\]/g;
 
 export function extractWikilinks(content: string): string[] {
   const links = new Set<string>();
-  let match: RegExpExecArray | null;
-  while ((match = WIKILINK_REGEX.exec(content)) !== null) {
+  for (const match of content.matchAll(WIKILINK_REGEX)) {
     const target = match[1].trim();
     if (target.length > 0) links.add(target);
   }
@@ -176,6 +181,19 @@ export default class LedgerMemPlugin extends Plugin {
       return;
     }
     const files = this.app.vault.getMarkdownFiles();
+    // Garbage-collect hashes for notes that no longer exist in the vault.
+    // Without this, fileHashes grows monotonically as users rename/delete
+    // notes and the on-disk plugin data file balloons over time.
+    const livePaths = new Set(files.map((f) => f.path));
+    let prunedHashes = false;
+    for (const knownPath of Object.keys(this.settings.fileHashes)) {
+      if (!livePaths.has(knownPath)) {
+        delete this.settings.fileHashes[knownPath];
+        prunedHashes = true;
+      }
+    }
+    if (prunedHashes) await this.saveData(this.settings);
+
     new Notice(`LedgerMem: backfilling ${files.length} notes…`);
     let ok = 0;
     let fail = 0;
