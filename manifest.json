@@ -1,11 +1,11 @@
 {
-  "id": "ledgermem",
-  "name": "LedgerMem",
+  "id": "getmnemo",
+  "name": "Mnemo",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "Sync your Obsidian vault to LedgerMem — searchable, durable memory for your notes and wikilinks.",
-  "author": "LedgerMem",
-  "authorUrl": "https://proofly.dev",
-  "fundingUrl": "https://proofly.dev",
+  "description": "Sync your Obsidian vault to Mnemo — searchable, durable memory for your notes and wikilinks.",
+  "author": "Mnemo",
+  "authorUrl": "https://getmnemo.xyz",
+  "fundingUrl": "https://getmnemo.xyz",
   "isDesktopOnly": false
 }

@@ -1,7 +1,7 @@
 {
-  "name": "@ledgermem/obsidian",
+  "name": "@getmnemo/obsidian",
   "version": "0.1.0",
-  "description": "Obsidian community plugin that syncs notes to LedgerMem.",
+  "description": "Obsidian community plugin that syncs notes to Mnemo.",
   "type": "module",
   "main": "main.js",
   "scripts": {
@@ -10,14 +10,14 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": ["obsidian", "obsidian-plugin", "ledgermem", "memory"],
-  "author": "LedgerMem <founders@proofly.dev>",
+  "keywords": ["obsidian", "obsidian-plugin", "getmnemo", "memory"],
+  "author": "Mnemo <founders@getmnemo.xyz>",
   "license": "MIT",
   "peerDependencies": {
     "obsidian": "^1.5.0"
   },
   "dependencies": {
-    "@ledgermem/memory": "^0.1.0"
+    "@getmnemo/memory": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

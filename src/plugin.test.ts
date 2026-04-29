@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { extractWikilinks, pushNote, type MemoryClient } from "../main.js";
 
-vi.mock("@ledgermem/memory", () => ({
-  LedgerMem: vi.fn().mockImplementation(() => ({ add: vi.fn() })),
+vi.mock("@getmnemo/memory", () => ({
+  Mnemo: vi.fn().mockImplementation(() => ({ add: vi.fn() })),
 }));
 
 vi.mock("obsidian", () => ({

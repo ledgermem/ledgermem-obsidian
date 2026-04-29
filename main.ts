@@ -6,11 +6,11 @@ import {
   Setting,
   TFile,
 } from "obsidian";
-import { LedgerMem } from "@ledgermem/memory";
+import { Mnemo } from "@getmnemo/memory";
 
 export type SyncMode = "manual" | "on-save" | "interval";
 
-export interface LedgerMemSettings {
+export interface MnemoSettings {
   apiKey: string;
   workspaceId: string;
   syncMode: SyncMode;
@@ -19,7 +19,7 @@ export interface LedgerMemSettings {
   fileHashes: Record<string, string>;
 }
 
-export const DEFAULT_SETTINGS: LedgerMemSettings = {
+export const DEFAULT_SETTINGS: MnemoSettings = {
   apiKey: "",
   workspaceId: "",
   syncMode: "on-save",
@@ -75,26 +75,26 @@ export async function pushNote(
   });
 }
 
-export default class LedgerMemPlugin extends Plugin {
-  settings!: LedgerMemSettings;
-  private client: LedgerMem | null = null;
+export default class MnemoPlugin extends Plugin {
+  settings!: MnemoSettings;
+  private client: Mnemo | null = null;
   private intervalId: number | null = null;
 
   async onload(): Promise<void> {
     await this.loadSettings();
     this.rebuildClient();
 
-    this.addSettingTab(new LedgerMemSettingTab(this.app, this));
+    this.addSettingTab(new MnemoSettingTab(this.app, this));
 
     this.addCommand({
-      id: "ledgermem-backfill-vault",
-      name: "LedgerMem: backfill vault",
+      id: "getmnemo-backfill-vault",
+      name: "Mnemo: backfill vault",
       callback: () => this.backfillVault(),
     });
 
     this.addCommand({
-      id: "ledgermem-sync-current",
-      name: "LedgerMem: sync current note",
+      id: "getmnemo-sync-current",
+      name: "Mnemo: sync current note",
       checkCallback: (checking: boolean) => {
         const file = this.app.workspace.getActiveFile();
         if (!file) return false;
@@ -124,7 +124,7 @@ export default class LedgerMemPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    const stored = (await this.loadData()) as Partial<LedgerMemSettings> | null;
+    const stored = (await this.loadData()) as Partial<MnemoSettings> | null;
     this.settings = { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
   }
 
@@ -135,7 +135,7 @@ export default class LedgerMemPlugin extends Plugin {
 
   private rebuildClient(): void {
     if (this.settings.apiKey && this.settings.workspaceId) {
-      this.client = new LedgerMem({
+      this.client = new Mnemo({
         apiKey: this.settings.apiKey,
         workspaceId: this.settings.workspaceId,
       });
@@ -156,7 +156,7 @@ export default class LedgerMemPlugin extends Plugin {
   async syncFile(file: TFile): Promise<void> {
     const client = this.getClient();
     if (!client) {
-      new Notice("LedgerMem: API key or workspace not configured.");
+      new Notice("Mnemo: API key or workspace not configured.");
       return;
     }
     try {
@@ -169,15 +169,15 @@ export default class LedgerMemPlugin extends Plugin {
       this.settings.fileHashes[file.path] = hash;
       await this.saveData(this.settings);
     } catch (err) {
-      console.error("[ledgermem] sync failed", err);
-      new Notice(`LedgerMem sync failed: ${(err as Error).message}`);
+      console.error("[getmnemo] sync failed", err);
+      new Notice(`Mnemo sync failed: ${(err as Error).message}`);
     }
   }
 
   async backfillVault(): Promise<void> {
     const client = this.getClient();
     if (!client) {
-      new Notice("LedgerMem: API key or workspace not configured.");
+      new Notice("Mnemo: API key or workspace not configured.");
       return;
     }
     const files = this.app.vault.getMarkdownFiles();
@@ -194,7 +194,7 @@ export default class LedgerMemPlugin extends Plugin {
     }
     if (prunedHashes) await this.saveData(this.settings);
 
-    new Notice(`LedgerMem: backfilling ${files.length} notes…`);
+    new Notice(`Mnemo: backfilling ${files.length} notes…`);
     let ok = 0;
     let fail = 0;
     let skipped = 0;
@@ -225,27 +225,27 @@ export default class LedgerMemPlugin extends Plugin {
         }
       } catch (err) {
         fail += 1;
-        console.error("[ledgermem] backfill error", file.path, err);
+        console.error("[getmnemo] backfill error", file.path, err);
       }
     }
     await this.saveData(this.settings);
-    new Notice(`LedgerMem backfill: ${ok} pushed, ${skipped} unchanged, ${fail} failed.`);
+    new Notice(`Mnemo backfill: ${ok} pushed, ${skipped} unchanged, ${fail} failed.`);
   }
 }
 
-class LedgerMemSettingTab extends PluginSettingTab {
-  constructor(app: App, private readonly plugin: LedgerMemPlugin) {
+class MnemoSettingTab extends PluginSettingTab {
+  constructor(app: App, private readonly plugin: MnemoPlugin) {
     super(app, plugin);
   }
 
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "LedgerMem" });
+    containerEl.createEl("h2", { text: "Mnemo" });
 
     new Setting(containerEl)
       .setName("API key")
-      .setDesc("Your LedgerMem API key.")
+      .setDesc("Your Mnemo API key.")
       .addText((t) =>
         t
           .setPlaceholder("lm_live_…")
@@ -271,7 +271,7 @@ class LedgerMemSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Sync mode")
-      .setDesc("How notes are pushed to LedgerMem.")
+      .setDesc("How notes are pushed to Mnemo.")
       .addDropdown((d) =>
         d
           .addOption("manual", "Manual (commands only)")
