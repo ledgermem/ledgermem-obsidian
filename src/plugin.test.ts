@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { extractWikilinks, pushNote, type MemoryClient } from "../main.js";
 
-vi.mock("@getmnemo/memory", () => ({
+vi.mock("@mnemo/memory", () => ({
   Mnemo: vi.fn().mockImplementation(() => ({ add: vi.fn() })),
 }));
 

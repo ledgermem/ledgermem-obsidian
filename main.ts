@@ -6,7 +6,7 @@ import {
   Setting,
   TFile,
 } from "obsidian";
-import { Mnemo } from "@getmnemo/memory";
+import { Mnemo } from "@mnemo/memory";
 
 export type SyncMode = "manual" | "on-save" | "interval";
 
